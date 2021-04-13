@@ -132,6 +132,8 @@ func main() {
 					close(c.MessageCh)
 					connections.Delete(k)
 				case c.MessageCh <- t:
+				default:
+					logger.Warnf("dropping message for %v due to buffer size", c.Conn.RemoteAddr())
 				}
 				return true
 			})
@@ -165,7 +167,7 @@ func main() {
 		}
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		receiverCh := make(chan *message)
+		receiverCh := make(chan *message, 1000)
 		connections.Store(conn, &connection{
 			Conn:      conn,
 			Context:   ctx,
