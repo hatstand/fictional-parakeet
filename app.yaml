@@ -22,7 +22,7 @@ services:
         type: SECRET
         value: EV[1:fNYGZQOS94T1772HB27nJmRjxxdtX+aD:CxKNEshHcYPeBFPPvOeRQC1FNfp0HZtzuxb5ouq67OKC+ghPB4yhxM2CQWas2CybqR4r1pfbqmiaYtY=]
     routes:
-      - path: /
+      - path: /srv
     
 static_sites:
   - name: frontend
@@ -34,7 +34,7 @@ static_sites:
     # Relative to source_dir
     output_dir: build
     routes:
-      - path: /web
+      - path: /
 
 
     
