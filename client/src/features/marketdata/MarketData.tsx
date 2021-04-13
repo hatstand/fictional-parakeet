@@ -46,16 +46,58 @@ const Position: React.FC<PositionProps> = ({position, tick}) => {
     )
 };
 
+const orderedMonths = [
+    'JAN',
+    'FEB',
+    'MAR',
+    'APR',
+    'MAY',
+    'JUN',
+    'JUL',
+    'SEP',
+    'OCT',
+    'NOV',
+    'DEC',
+];
+
 export const MarketData: React.FC = () => {
     const ticks = useAppSelector(selectTicks);
     const positions = Object.values(useAppSelector(selectPositions));
+
+    const re = /BTC-(\d{1,2})([A-Z]{3})(\d{2})/;
+
+    const sortedTicks = Object.values(ticks).sort((a, b): number => {
+        const aMatch = a.instrumentName.match(re);
+        const bMatch = b.instrumentName.match(re);
+        if (aMatch === bMatch) {
+            return 0;
+        }
+        if (aMatch === null) {
+            return -1;
+        }
+        if (bMatch === null) {
+            return 1;
+        }
+        const [_a, aDay, aMonth, aYear] = aMatch;
+        const [_b, bDay, bMonth, bYear] = bMatch;
+        if (aYear !== bYear) {
+            return aYear.localeCompare(bYear);
+        }
+        if (aMonth !== bMonth) {
+            return orderedMonths.indexOf(aMonth) - orderedMonths.indexOf(bMonth);
+        }
+        if (aDay !== bDay) {
+            return parseInt(aDay) - parseInt(bDay);
+        }
+        return 0;
+    });
 
     return (
         <Container>
             <Row>
                 <Col>
                     <h2>Market</h2>
-                    {Object.values(ticks).map(t => <Ticker tick={t} key={t.instrumentName}></Ticker>)}
+                    {sortedTicks.map(t => <Ticker tick={t} key={t.instrumentName}></Ticker>)}
                 </Col>
                 <Col>
                     <h2>Positions</h2>
