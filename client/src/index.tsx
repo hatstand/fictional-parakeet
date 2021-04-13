@@ -5,7 +5,7 @@ import App from './App';
 import { store } from './app/store';
 import { Provider } from 'react-redux';
 import * as serviceWorker from './serviceWorker';
-import { tick } from './features/marketdata/marketdataSlice';
+import { position, tick } from './features/marketdata/marketdataSlice';
 
 ReactDOM.render(
   <React.StrictMode>
@@ -27,7 +27,18 @@ socket.addEventListener('open', (ev) => {
 });
 socket.addEventListener('message', (ev) => {
   console.debug(ev.data);
-  store.dispatch(tick(JSON.parse(ev.data)));
+  const m = JSON.parse(ev.data);
+  switch (m.event) {
+    case 'tick':
+      store.dispatch(tick(m.tick));
+      break;
+    case 'position':
+      store.dispatch(position(m.position));
+      break;
+    default:
+      console.warn('Unhandled message type:', m.event);
+      break;
+  }
 });
 socket.addEventListener('error', ev => {
   console.log('websocket error: ', ev);

@@ -21,16 +21,27 @@ type config struct {
 	DeribitSecretKey string `envconfig:"DERIBIT_SECRET_KEY" required:"true"`
 }
 
+type message struct {
+	Event    string    `json:"event"`
+	Tick     *tick     `json:"tick,omitempty"`
+	Position *position `json:"position,omitempty"`
+}
+
 type tick struct {
 	InstrumentName string  `json:"instrumentName"`
 	Bid            float64 `json:"bid"`
 	Ask            float64 `json:"ask"`
 }
 
+type position struct {
+	InstrumentName string  `json:"instrumentName"`
+	Size           float64 `json:"size"`
+}
+
 type connection struct {
 	Conn      *websocket.Conn
 	Context   context.Context
-	MessageCh chan<- *tick
+	MessageCh chan<- *message
 }
 
 var loggingLevel = zap.LevelFlag("level", zapcore.DebugLevel, "")
@@ -74,14 +85,17 @@ func main() {
 		tickers = append(tickers, fmt.Sprintf("ticker.%s.raw", instrument.InstrumentName))
 	}
 
-	ticks := make(chan *tick)
+	messages := make(chan *message)
 	for _, ticker := range tickers {
 		client.On(ticker, func(e *models.TickerNotification) {
 			logger.Debugf("%s\t%.2f\t%.2f", e.InstrumentName, e.BestAskPrice, e.BestBidPrice)
-			ticks <- &tick{
-				InstrumentName: e.InstrumentName,
-				Ask:            e.BestAskPrice,
-				Bid:            e.BestBidPrice,
+			messages <- &message{
+				Event: "tick",
+				Tick: &tick{
+					InstrumentName: e.InstrumentName,
+					Ask:            e.BestAskPrice,
+					Bid:            e.BestBidPrice,
+				},
 			}
 		})
 	}
@@ -89,7 +103,7 @@ func main() {
 
 	connections := sync.Map{}
 	go func() {
-		for t := range ticks {
+		for t := range messages {
 			connections.Range(func(k interface{}, v interface{}) bool {
 				// Range is not necessarily consistent so make sure it's still there.
 				if _, ok := connections.Load(k); !ok {
@@ -108,6 +122,18 @@ func main() {
 		}
 	}()
 
+	positions, err := client.GetPositions(&models.GetPositionsParams{
+		Currency: "BTC",
+		Kind:     "future",
+	})
+	if err != nil {
+		logger.Error(err)
+	}
+	for _, position := range positions {
+		logger.Infof("%s %s %.0f", position.Direction, position.InstrumentName, position.Size)
+		fmt.Printf("%+v\n", position)
+	}
+
 	upgrader := websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
@@ -124,12 +150,28 @@ func main() {
 		}
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		receiverCh := make(chan *tick)
+		receiverCh := make(chan *message)
 		connections.Store(conn, &connection{
 			Conn:      conn,
 			Context:   ctx,
 			MessageCh: receiverCh,
 		})
+		// Send all current positions first.
+		for _, pos := range positions {
+			if err := conn.WriteJSON(message{
+				Event: "position",
+				Position: &position{
+					InstrumentName: pos.InstrumentName,
+					Size:           pos.Size,
+				},
+			}); err != nil {
+				logger.Warnf("failed to write message to subscriber: %v", err)
+				// Should close the websocket and stop any more writes to the channel.
+				logger.Debugf("cancelling subscription for %v", conn.RemoteAddr)
+				cancel()
+				return
+			}
+		}
 		for t := range receiverCh {
 			if err := conn.WriteJSON(t); err != nil {
 				logger.Warnf("failed to write message to subscriber: %v", err)
