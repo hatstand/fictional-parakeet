@@ -22,7 +22,7 @@ ReactDOM.render(
 // Learn more about service workers: https://bit.ly/CRA-PWA
 serviceWorker.unregister();
 
-const socket = new WebSocket(`wss://${window.location.host}/srv/subscribe`);
+const socket = new WebSocket(process.env.REACT_APP_SUBSCRIBE_URL!);
 socket.addEventListener('open', (ev) => {
   console.log('Connection opened: ', ev);
 });
