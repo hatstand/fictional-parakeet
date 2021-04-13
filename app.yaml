@@ -1,0 +1,35 @@
+name: fictional-parakeet
+region: ams
+services:
+  - name: server
+    environment_slug: go
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    github: 
+      branch: main
+      deploy_on_push: true
+      repo: hatstand/fictional-parakeet
+    http_port: 12345
+    envs:
+      - key: DERIBIT_API_KEY
+        scope: RUN_AND_BUILD_TIME
+        value: 2bwUa0Bv
+      - key: DERIBIT_SECRET_KEY
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+        value: EV[1:fNYGZQOS94T1772HB27nJmRjxxdtX+aD:CxKNEshHcYPeBFPPvOeRQC1FNfp0HZtzuxb5ouq67OKC+ghPB4yhxM2CQWas2CybqR4r1pfbqmiaYtY=]
+    routes:
+      - path: /
+    
+static_sites:
+  - name: frontend
+    github: 
+      repo: hatstand/fictional-parakeet
+      branch: main
+      deploy_on_push: true
+    source_dir: client
+    routes:
+      - path: /web
+
+
+    
