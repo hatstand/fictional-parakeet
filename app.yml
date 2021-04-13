@@ -1,0 +1,22 @@
+name: fictional-parakeet
+services:
+  - name: server
+    git: 
+      repo_clone_url: https://github.com/hatstand/fictional-parakeet
+      branch: main
+      deploy_on_push: true
+    http_port: 12345
+    build_command: go build ./cmd/server
+    run_command: ./server
+static_sites:
+  - name: frontend
+    git: 
+      repo_clone_url: https://github.com/hatstand/fictional-parakeet
+      branch: main
+      deploy_on_push: true
+    dockerfile_path: client/build.dockerfile
+    build_command: cd client && yarn install && yarn build
+    output_dir: client/build
+
+
+    
