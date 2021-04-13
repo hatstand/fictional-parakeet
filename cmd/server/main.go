@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"runtime"
 	"sync"
 
 	"github.com/frankrap/deribit-api"
@@ -45,6 +46,8 @@ type connection struct {
 }
 
 var loggingLevel = zap.LevelFlag("level", zapcore.DebugLevel, "")
+
+const btcIndexTicker = "deribit_price_index.btc_usd"
 
 func buildLogger() *zap.SugaredLogger {
 	cfg := zap.NewDevelopmentConfig()
@@ -98,7 +101,20 @@ func main() {
 				},
 			}
 		})
+
+		client.On(btcIndexTicker, func(e *models.DeribitPriceIndexNotification) {
+			logger.Debugf("BTC: %.2f", e.Price)
+			messages <- &message{
+				Event: "tick",
+				Tick: &tick{
+					InstrumentName: "BTC",
+					Ask:            e.Price,
+					Bid:            e.Price,
+				},
+			}
+		})
 	}
+	tickers = append(tickers, btcIndexTicker)
 	client.Subscribe(tickers)
 
 	connections := sync.Map{}
@@ -131,7 +147,6 @@ func main() {
 	}
 	for _, position := range positions {
 		logger.Infof("%s %s %.0f", position.Direction, position.InstrumentName, position.Size)
-		fmt.Printf("%+v\n", position)
 	}
 
 	upgrader := websocket.Upgrader{
@@ -181,6 +196,12 @@ func main() {
 				return
 			}
 		}
+	})
+
+	http.HandleFunc("/status", func(w http.ResponseWriter, r *http.Request) {
+		var m runtime.MemStats
+		runtime.ReadMemStats(&m)
+		fmt.Fprintf(w, "Allocated: %d", m.Alloc/1024/1024)
 	})
 
 	logger.Info("Listening...")

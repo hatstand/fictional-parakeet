@@ -15,7 +15,7 @@ interface TickerProps {
 const Ticker: React.FC<TickerProps> = ({tick}) => {
     return (
         <div>
-            <div>{tick.instrumentName}</div>
+            <h6>{tick.instrumentName}</h6>
             <div className="text-danger">{`$${tick.ask.toFixed(2)}`}</div>
             <div className="text-success">{`$${tick.bid.toFixed(2)}`}</div>
         </div>
@@ -25,14 +25,24 @@ const Ticker: React.FC<TickerProps> = ({tick}) => {
 interface PositionProps {
     position: IPosition;
     tick?: Tick; // Matching tick for the position instrument.
+    indexTick?: Tick; // Current index price.
 }
 
-const Position: React.FC<PositionProps> = ({position, tick}) => {
-    const getValue = (): string | undefined => {
+const Position: React.FC<PositionProps> = ({position, tick, indexTick}) => {
+    const getValueBTC = (): number | undefined => {
         if (!tick) return undefined;
-        const value = position.size >= 0 ? position.size / tick.bid : -position.size / tick.ask;
-        return `₿${value.toFixed(6)}`;
+        return position.size >= 0 ? position.size / tick.bid : -position.size / tick.ask;
     };
+
+    const getValueUSD = (): number | undefined => {
+        const btc = getValueBTC();
+        if (!btc || !indexTick) return undefined;
+
+        return btc * indexTick.ask;
+    };
+
+    const formatUSD = (v?: number): string => v ? `$${v.toFixed(2)}` : '';
+    const formatBTC = (v?: number): string => v ? `₿${v.toFixed(6)}`: '';
 
     return (
         <div>
@@ -41,7 +51,8 @@ const Position: React.FC<PositionProps> = ({position, tick}) => {
                 &nbsp;
                 <span>{position.instrumentName}</span>
             </div>
-            <div>{getValue()}</div>
+            <div>{formatBTC(getValueBTC())}</div>
+            <div>{formatUSD(getValueUSD())}</div>
         </div>
     )
 };
@@ -92,6 +103,8 @@ export const MarketData: React.FC = () => {
         return 0;
     });
 
+    const indexTick = ticks['BTC'];
+
     return (
         <Container>
             <Row>
@@ -101,7 +114,7 @@ export const MarketData: React.FC = () => {
                 </Col>
                 <Col>
                     <h2>Positions</h2>
-                    {positions.map(p => <Position position={p} tick={ticks[p.instrumentName]} key={p.instrumentName}></Position>)}
+                    {positions.map(p => <Position position={p} tick={ticks[p.instrumentName]} indexTick={indexTick} key={p.instrumentName}></Position>)}
                 </Col>
             </Row>
         </Container>
