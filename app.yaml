@@ -12,13 +12,13 @@ services:
     http_port: 12345
     envs:
       - key: ENV
-        scope: RUNTIME_ONLY_VAR
+        scope: RUN_TIME
         value: production
       - key: DERIBIT_API_KEY
-        scope: RUNTIME_ONLY_VAR
+        scope: RUN_TIME
         value: 2bwUa0Bv
       - key: DERIBIT_SECRET_KEY
-        scope: RUNTIME_ONLY_VAR
+        scope: RUN_TIME
         type: SECRET
         value: EV[1:fNYGZQOS94T1772HB27nJmRjxxdtX+aD:CxKNEshHcYPeBFPPvOeRQC1FNfp0HZtzuxb5ouq67OKC+ghPB4yhxM2CQWas2CybqR4r1pfbqmiaYtY=]
     routes:
