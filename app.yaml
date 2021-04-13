@@ -11,11 +11,14 @@ services:
       repo: hatstand/fictional-parakeet
     http_port: 12345
     envs:
+      - key: ENV
+        scope: RUNTIME_ONLY_VAR
+        value: production
       - key: DERIBIT_API_KEY
-        scope: RUN_AND_BUILD_TIME
+        scope: RUNTIME_ONLY_VAR
         value: 2bwUa0Bv
       - key: DERIBIT_SECRET_KEY
-        scope: RUN_AND_BUILD_TIME
+        scope: RUNTIME_ONLY_VAR
         type: SECRET
         value: EV[1:fNYGZQOS94T1772HB27nJmRjxxdtX+aD:CxKNEshHcYPeBFPPvOeRQC1FNfp0HZtzuxb5ouq67OKC+ghPB4yhxM2CQWas2CybqR4r1pfbqmiaYtY=]
     routes:
@@ -28,6 +31,8 @@ static_sites:
       branch: main
       deploy_on_push: true
     source_dir: client
+    # Relative to source_dir
+    output_dir: build
     routes:
       - path: /web
 

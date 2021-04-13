@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"runtime"
 	"sync"
 
@@ -45,12 +46,17 @@ type connection struct {
 	MessageCh chan<- *message
 }
 
-var loggingLevel = zap.LevelFlag("level", zapcore.DebugLevel, "")
+var loggingLevel = zap.LevelFlag("level", zapcore.InfoLevel, "log level (debug, info, etc.)")
 
 const btcIndexTicker = "deribit_price_index.btc_usd"
 
 func buildLogger() *zap.SugaredLogger {
-	cfg := zap.NewDevelopmentConfig()
+	var cfg zap.Config
+	if os.Getenv("ENV") == "production" {
+		cfg = zap.NewProductionConfig()
+	} else {
+		cfg = zap.NewDevelopmentConfig()
+	}
 	cfg.Level = zap.NewAtomicLevelAt(*loggingLevel)
 	logger, _ := cfg.Build()
 	return logger.Sugar()

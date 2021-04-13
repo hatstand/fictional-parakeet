@@ -16,4 +16,5 @@
 
 node_modules/
 server
-/client/build/
+/client/build/*
+!/client/build/.keep
