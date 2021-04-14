@@ -31,7 +31,7 @@ interface PositionProps {
 const valuePositionBTC = (position: IPosition, tick: Tick | null): number | null => {
     if (!tick) return null;
 
-    return position.size >= 0 ? position.size / tick.bid : -position.size / tick.ask;
+    return position.size >= 0 ? position.size / tick.bid : position.size / tick.ask;
 };
 
 const valuePositionUSD = (position: IPosition, tick: Tick | null, indexTick: Tick | null): number | null => {
