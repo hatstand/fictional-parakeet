@@ -33,7 +33,7 @@ static_sites:
     envs:
       - key: REACT_APP_SUBSCRIBE_URL
         scope: BUILD_TIME
-        value: wss://${APP_DOMAIN}${web.PUBLIC_ROUTE_PATH}/subscribe
+        value: wss://${APP_DOMAIN}${server.PUBLIC_ROUTE_PATH}/subscribe
     build_command: yarn build
     source_dir: client
     # Relative to source_dir
