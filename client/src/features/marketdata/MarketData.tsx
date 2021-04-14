@@ -15,7 +15,7 @@ interface TickerProps {
 const Ticker: React.FC<TickerProps> = ({tick}) => {
     return (
         <div>
-            <h6>{tick.instrumentName}</h6>
+            <strong>{tick.instrumentName}</strong>
             <div className="text-danger">{`$${tick.ask.toFixed(2)}`}</div>
             <div className="text-success">{`$${tick.bid.toFixed(2)}`}</div>
         </div>
@@ -51,12 +51,31 @@ const Position: React.FC<PositionProps> = ({position, tick, indexTick}) => {
     return (
         <div>
             <div>
-                <span className={`${position.size >= 0 ? 'text-success' : 'text-danger'}`}>{position.size}</span>
+                <strong className={`${position.size >= 0 ? 'text-success' : 'text-danger'}`}>{position.size}</strong >
                 &nbsp;
-                <span>{position.instrumentName}</span>
+                <strong >{position.instrumentName}</strong>
             </div>
             <div>{valueBTC ? formatBTC(valueBTC) : ''}</div>
             <div>{valueUSD ? formatUSD(valueUSD): ''}</div>
+        </div>
+    )
+};
+
+interface BalanceProps {
+    balance: IPosition;
+    indexTick: Tick | null;
+}
+
+const Balance: React.FC<BalanceProps> = ({balance, indexTick}) => {
+    return (
+        <div>
+            <div>
+                <strong className={`${balance.size >= 0 ? 'text-success' : 'text-danger'}`}>{balance.size}</strong>
+                &nbsp;
+                <strong>{balance.instrumentName}</strong>
+            </div>
+            <div>{formatBTC(balance.size)}</div>
+            <div>{indexTick ? formatUSD(balance.size * indexTick.ask) : ''}</div>
         </div>
     )
 };
@@ -82,6 +101,7 @@ function notNull<T>(value: T | null): value is T {
 export const MarketData: React.FC = () => {
     const ticks = useAppSelector(selectTicks);
     const positions = Object.values(useAppSelector(selectPositions));
+    const balance = useAppSelector((state: RootState) => state.marketdata.balance);
 
     const re = /BTC-(\d{1,2})([A-Z]{3})(\d{2})/;
 
@@ -113,24 +133,30 @@ export const MarketData: React.FC = () => {
 
     const indexTick = ticks['BTC'];
 
+    const balanceUSD = (balance && indexTick) ? balance.size * indexTick.ask : null;
+
     const bookValue = positions.map(p => valuePositionUSD(p, ticks[p.instrumentName], indexTick))
         .filter(notNull)
-        .reduce((prev, curr) => prev + curr, 0);
+        .reduce((prev, curr) => prev + curr, 0) + (balanceUSD ?? 0);
 
     useEffect(() => {
         document.title = formatUSD(bookValue);
     }, [bookValue]);
 
+
     return (
         <Container>
+            <h1 className={(bookValue && bookValue >=0) ? 'text-success' : 'text-danger'}>{formatUSD(bookValue)}</h1>
             <Row>
                 <Col>
                     <h2>Market</h2>
                     {sortedTicks.map(t => <Ticker tick={t} key={t.instrumentName}></Ticker>)}
                 </Col>
                 <Col>
-                    <h2>Positions ({formatUSD(bookValue)})</h2>
+                    <h2>Positions</h2>
                     {positions.map(p => <Position position={p} tick={ticks[p.instrumentName]} indexTick={indexTick} key={p.instrumentName}></Position>)}
+                    <h2>Balance</h2>
+                    {balance && <Balance balance={balance} indexTick={indexTick}></Balance>}
                 </Col>
             </Row>
         </Container>

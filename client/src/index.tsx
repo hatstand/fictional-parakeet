@@ -6,7 +6,7 @@ import App from './App';
 import { store } from './app/store';
 import { Provider } from 'react-redux';
 import * as serviceWorker from './serviceWorker';
-import { position, tick } from './features/marketdata/marketdataSlice';
+import { balance, position, tick } from './features/marketdata/marketdataSlice';
 
 ReactDOM.render(
   <React.StrictMode>
@@ -35,6 +35,9 @@ socket.addEventListener('message', (ev) => {
       break;
     case 'position':
       store.dispatch(position(m.position));
+      break;
+    case 'balance':
+      store.dispatch(balance(m.position));
       break;
     default:
       console.warn('Unhandled message type:', m.event);

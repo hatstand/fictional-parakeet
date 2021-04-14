@@ -157,6 +157,15 @@ func main() {
 		logger.Infof("%s %s %.0f", position.Direction, position.InstrumentName, position.Size)
 	}
 
+	summary, err := client.GetAccountSummary(&models.GetAccountSummaryParams{
+		Currency: "BTC",
+	})
+	if err != nil {
+		logger.Error(err)
+	} else {
+		logger.Infof("Balance (BTC): %f", summary.Balance)
+	}
+
 	upgrader := websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
@@ -194,6 +203,16 @@ func main() {
 				cancel()
 				return
 			}
+		}
+		// Send current balance too.
+		if err := conn.WriteJSON(message{
+			Event: "balance",
+			Position: &position{
+				InstrumentName: "BTC",
+				Size:           summary.Balance,
+			},
+		}); err != nil {
+			logger.Warnf("failed to write message to subscriber: %v", err)
 		}
 		for t := range receiverCh {
 			if err := conn.WriteJSON(t); err != nil {

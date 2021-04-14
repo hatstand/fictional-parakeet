@@ -7,6 +7,7 @@ interface MarketDataState {
     positions: {
         [key: string]: Position;
     };
+    balance: Position | null;
 }
 
 export interface Tick {
@@ -23,6 +24,7 @@ export interface Position {
 const initialState: MarketDataState = {
     ticks: {},
     positions: {},
+    balance: null,
 }
 
 export const marketdataSlice = createSlice({
@@ -35,9 +37,12 @@ export const marketdataSlice = createSlice({
         position: (state, action: PayloadAction<Position>) => {
             state.positions[action.payload.instrumentName] = action.payload;
         },
+        balance: (state, action: PayloadAction<Position>) => {
+            state.balance = action.payload;
+        },
     },
 });
 
-export const { position, tick } = marketdataSlice.actions;
+export const { balance, position, tick } = marketdataSlice.actions;
 
 export default marketdataSlice.reducer;
