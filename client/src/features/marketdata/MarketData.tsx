@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Container, Row, Col } from "react-bootstrap";
 import { useAppSelector } from "../../app/hooks";
 import { RootState } from "../../app/store";
@@ -28,21 +28,28 @@ interface PositionProps {
     indexTick?: Tick; // Current index price.
 }
 
+const valuePositionBTC = (position: IPosition, tick: Tick): number => {
+    return position.size >= 0 ? position.size / tick.bid : -position.size / tick.ask;
+};
+
+const valuePositionUSD = (position: IPosition, tick: Tick, indexTick: Tick): number => {
+    return valuePositionBTC(position, tick) * indexTick.ask;
+};
+
+const formatUSD = (v?: number): string => v ? `$${v.toFixed(2)}` : '';
+const formatBTC = (v?: number): string => v ? `₿${v.toFixed(6)}`: '';
+
 const Position: React.FC<PositionProps> = ({position, tick, indexTick}) => {
     const getValueBTC = (): number | undefined => {
         if (!tick) return undefined;
-        return position.size >= 0 ? position.size / tick.bid : -position.size / tick.ask;
+        return valuePositionBTC(position, tick);
     };
 
     const getValueUSD = (): number | undefined => {
-        const btc = getValueBTC();
-        if (!btc || !indexTick) return undefined;
+        if (!tick || !indexTick) return undefined;
 
-        return btc * indexTick.ask;
+        return valuePositionUSD(position, tick, indexTick);
     };
-
-    const formatUSD = (v?: number): string => v ? `$${v.toFixed(2)}` : '';
-    const formatBTC = (v?: number): string => v ? `₿${v.toFixed(6)}`: '';
 
     return (
         <div>
@@ -105,6 +112,13 @@ export const MarketData: React.FC = () => {
 
     const indexTick = ticks['BTC'];
 
+    const bookValue = positions.map(p => valuePositionUSD(p, ticks[p.instrumentName], indexTick))
+        .reduce((prev, curr) => prev + curr, 0);
+
+    useEffect(() => {
+        document.title = formatUSD(bookValue);
+    }, [bookValue]);
+
     return (
         <Container>
             <Row>
@@ -113,7 +127,7 @@ export const MarketData: React.FC = () => {
                     {sortedTicks.map(t => <Ticker tick={t} key={t.instrumentName}></Ticker>)}
                 </Col>
                 <Col>
-                    <h2>Positions</h2>
+                    <h2>Positions ({formatUSD(bookValue)})</h2>
                     {positions.map(p => <Position position={p} tick={ticks[p.instrumentName]} indexTick={indexTick} key={p.instrumentName}></Position>)}
                 </Col>
             </Row>
