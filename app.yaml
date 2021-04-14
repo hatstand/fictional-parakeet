@@ -1,5 +1,8 @@
 name: fictional-parakeet
 region: ams
+domains:
+  - domain: parakeet.purplehatstands.com
+    type: PRIMARY
 services:
   - name: server
     environment_slug: go
