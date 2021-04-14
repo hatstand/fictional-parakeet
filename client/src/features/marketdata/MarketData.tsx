@@ -24,32 +24,29 @@ const Ticker: React.FC<TickerProps> = ({tick}) => {
 
 interface PositionProps {
     position: IPosition;
-    tick?: Tick; // Matching tick for the position instrument.
-    indexTick?: Tick; // Current index price.
+    tick: Tick | null; // Matching tick for the position instrument.
+    indexTick: Tick | null; // Current index price.
 }
 
-const valuePositionBTC = (position: IPosition, tick: Tick): number => {
+const valuePositionBTC = (position: IPosition, tick: Tick | null): number | null => {
+    if (!tick) return null;
+
     return position.size >= 0 ? position.size / tick.bid : -position.size / tick.ask;
 };
 
-const valuePositionUSD = (position: IPosition, tick: Tick, indexTick: Tick): number => {
-    return valuePositionBTC(position, tick) * indexTick.ask;
+const valuePositionUSD = (position: IPosition, tick: Tick | null, indexTick: Tick | null): number | null => {
+    if (!indexTick) return null;
+    const positionBTC = valuePositionBTC(position, tick);
+
+    return positionBTC !== null ? positionBTC * indexTick.ask : null;
 };
 
 const formatUSD = (v?: number): string => v ? `$${v.toFixed(2)}` : '';
 const formatBTC = (v?: number): string => v ? `₿${v.toFixed(6)}`: '';
 
 const Position: React.FC<PositionProps> = ({position, tick, indexTick}) => {
-    const getValueBTC = (): number | undefined => {
-        if (!tick) return undefined;
-        return valuePositionBTC(position, tick);
-    };
-
-    const getValueUSD = (): number | undefined => {
-        if (!tick || !indexTick) return undefined;
-
-        return valuePositionUSD(position, tick, indexTick);
-    };
+    const valueBTC = valuePositionBTC(position, tick);
+    const valueUSD = valuePositionUSD(position, tick, indexTick);
 
     return (
         <div>
@@ -58,8 +55,8 @@ const Position: React.FC<PositionProps> = ({position, tick, indexTick}) => {
                 &nbsp;
                 <span>{position.instrumentName}</span>
             </div>
-            <div>{formatBTC(getValueBTC())}</div>
-            <div>{formatUSD(getValueUSD())}</div>
+            <div>{valueBTC ? formatBTC(valueBTC) : ''}</div>
+            <div>{valueUSD ? formatUSD(valueUSD): ''}</div>
         </div>
     )
 };
@@ -77,6 +74,10 @@ const orderedMonths = [
     'NOV',
     'DEC',
 ];
+
+function notNull<T>(value: T | null): value is T {
+    return value !== null;
+}
 
 export const MarketData: React.FC = () => {
     const ticks = useAppSelector(selectTicks);
@@ -113,6 +114,7 @@ export const MarketData: React.FC = () => {
     const indexTick = ticks['BTC'];
 
     const bookValue = positions.map(p => valuePositionUSD(p, ticks[p.instrumentName], indexTick))
+        .filter(notNull)
         .reduce((prev, curr) => prev + curr, 0);
 
     useEffect(() => {
