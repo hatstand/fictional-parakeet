@@ -27,6 +27,7 @@ type message struct {
 	Event    string    `json:"event"`
 	Tick     *tick     `json:"tick,omitempty"`
 	Position *position `json:"position,omitempty"`
+	Summary  *summary  `json:"summary"`
 }
 
 type tick struct {
@@ -38,6 +39,10 @@ type tick struct {
 type position struct {
 	InstrumentName string  `json:"instrumentName"`
 	Size           float64 `json:"size"`
+}
+
+type summary struct {
+	Equity float64 `json:"equity"`
 }
 
 type connection struct {
@@ -77,8 +82,18 @@ func main() {
 		ApiKey:        c.DeribitAPIKey,
 		SecretKey:     c.DeribitSecretKey,
 		AutoReconnect: true,
+		DebugMode:     false,
 	}
 	client := deribit.New(cfg)
+
+	privateClient := deribit.New(&deribit.Configuration{
+		Addr:          deribit.RealBaseURL,
+		AutoReconnect: true,
+		DebugMode:     true,
+	})
+	if err := privateClient.Auth(c.DeribitAPIKey, c.DeribitSecretKey); err != nil {
+		logger.Fatal(err)
+	}
 
 	instruments, err := client.GetInstruments(&models.GetInstrumentsParams{
 		Currency: "BTC",
@@ -119,8 +134,18 @@ func main() {
 				},
 			}
 		})
+
+		privateClient.On("user.portfolio.btc", func(e *models.PortfolioNotification) {
+			messages <- &message{
+				Event: "summary",
+				Summary: &summary{
+					Equity: e.Equity,
+				},
+			}
+		})
 	}
 	tickers = append(tickers, btcIndexTicker)
+	privateClient.Subscribe([]string{"user.portfolio.btc"})
 	client.Subscribe(tickers)
 
 	connections := sync.Map{}
@@ -157,13 +182,13 @@ func main() {
 		logger.Infof("%s %s %.0f", position.Direction, position.InstrumentName, position.Size)
 	}
 
-	summary, err := client.GetAccountSummary(&models.GetAccountSummaryParams{
+	accountSummary, err := client.GetAccountSummary(&models.GetAccountSummaryParams{
 		Currency: "BTC",
 	})
 	if err != nil {
 		logger.Error(err)
 	} else {
-		logger.Infof("Balance (BTC): %f", summary.Balance)
+		logger.Infof("Balance (BTC): %f", accountSummary.Balance)
 	}
 
 	upgrader := websocket.Upgrader{
@@ -209,7 +234,15 @@ func main() {
 			Event: "balance",
 			Position: &position{
 				InstrumentName: "BTC",
-				Size:           summary.Balance,
+				Size:           accountSummary.Balance,
+			},
+		}); err != nil {
+			logger.Warnf("failed to write message to subscriber: %v", err)
+		}
+		if err := conn.WriteJSON(message{
+			Event: "summary",
+			Summary: &summary{
+				Equity: accountSummary.Equity,
 			},
 		}); err != nil {
 			logger.Warnf("failed to write message to subscriber: %v", err)

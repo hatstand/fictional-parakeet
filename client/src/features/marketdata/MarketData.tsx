@@ -41,7 +41,7 @@ const valuePositionUSD = (position: IPosition, tick: Tick | null, indexTick: Tic
     return positionBTC !== null ? positionBTC * indexTick.ask : null;
 };
 
-const formatUSD = (v?: number): string => v ? `$${v.toFixed(2)}` : '';
+const formatUSD = (v: number | null | undefined): string => v ? `$${v.toFixed(2)}` : '';
 const formatBTC = (v?: number): string => v ? `₿${v.toFixed(6)}`: '';
 
 const Position: React.FC<PositionProps> = ({position, tick, indexTick}) => {
@@ -102,6 +102,7 @@ export const MarketData: React.FC = () => {
     const ticks = useAppSelector(selectTicks);
     const positions = Object.values(useAppSelector(selectPositions));
     const balance = useAppSelector((state: RootState) => state.marketdata.balance);
+    const equity = useAppSelector((state: RootState) => state.marketdata.equity);
 
     const re = /BTC-(\d{1,2})([A-Z]{3})(\d{2})/;
 
@@ -144,9 +145,11 @@ export const MarketData: React.FC = () => {
     }, [bookValue]);
 
 
+    const liquidationValue = (equity && indexTick) ? equity * indexTick.ask : null;
+
     return (
         <Container>
-            <h1 className={(bookValue && bookValue >=0) ? 'text-success' : 'text-danger'}>{formatUSD(bookValue)}</h1>
+            <h1 className={(liquidationValue && liquidationValue >=0) ? 'text-success' : 'text-danger'}>{formatUSD(liquidationValue)}</h1>
             <Row>
                 <Col>
                     <h2>Market</h2>
