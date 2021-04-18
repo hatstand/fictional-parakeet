@@ -146,10 +146,14 @@ export const MarketData: React.FC = () => {
 
 
     const liquidationValue = (equity && indexTick) ? equity * indexTick.ask : null;
+    const startValueUSD = 3325;
+    const pnl = liquidationValue ? (liquidationValue - startValueUSD) : null;
+    const pnlPercent = pnl ? (pnl / startValueUSD) * 100 : null;
 
     return (
         <Container>
-            <h1 className={(liquidationValue && liquidationValue >=0) ? 'text-success' : 'text-danger'}>{formatUSD(liquidationValue)}</h1>
+            <h1 className={(pnl && pnl > 0) ? 'text-success' : 'text-danger'}>{formatUSD(pnl)} ({pnlPercent ? pnlPercent.toFixed(2) : ''}%)</h1>
+            <small>${liquidationValue ? liquidationValue.toFixed(2) : ''}</small>
             <Row>
                 <Col>
                     <h2>Market</h2>
