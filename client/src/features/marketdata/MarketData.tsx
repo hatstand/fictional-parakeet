@@ -136,19 +136,14 @@ export const MarketData: React.FC = () => {
 
     const balanceUSD = (balance && indexTick) ? balance.size * indexTick.ask : null;
 
-    const bookValue = positions.map(p => valuePositionUSD(p, ticks[p.instrumentName], indexTick))
-        .filter(notNull)
-        .reduce((prev, curr) => prev + curr, 0) + (balanceUSD ?? 0);
-
-    useEffect(() => {
-        document.title = formatUSD(bookValue);
-    }, [bookValue]);
-
-
     const liquidationValue = (equity && indexTick) ? equity * indexTick.ask : null;
     const startValueUSD = 3325;
     const pnl = liquidationValue ? (liquidationValue - startValueUSD) : null;
     const pnlPercent = pnl ? (pnl / startValueUSD) * 100 : null;
+
+    useEffect(() => {
+        document.title = formatUSD(pnl);
+    }, [pnl]);
 
     return (
         <Container>
